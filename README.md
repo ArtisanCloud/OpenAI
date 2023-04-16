@@ -3,13 +3,15 @@
 OpenAI Golang SDK是用于与OpenAI API进行交互的Golang库。
 
 相关文档: [OpenAI API Documentation](https://platform.openai.com/docs/api-reference)
+- [**中文文档**](./README.md)
+- [**English Document**](./README_EN.md)
 
 ### 安装
 
 使用Go Modules可以很方便地安装OpenAI Golang SDK。在你的项目目录中，执行以下命令：
 
 ```
-go get github.com/artisancloud/openai
+go get -u github.com/artisancloud/openai
 ```
 
 ### 使用
@@ -19,21 +21,19 @@ go get github.com/artisancloud/openai
 ```
 func main() {
 	// 创建一个OpenAI API客户端
-	config := &openai.ClientConfig{
-		V1: openai.V1Config{
-			OpenAPIKey: "your-openai-key", // 必填, 你的OpenAI API密钥
-			Organization: "your-organization", // 可选, 你的组织id
-			HttpDebug: true, // 可选, 是否开启调试模式(使用默认log输出HTTP请求信息)
-			ProxyURL: "proxy-url", // 可选, 代理地址, 如果包含基本鉴权, 格式为http://username:password@xxxxxx:port
-		},
+	config  := openai.V1Config{
+		OpenAPIKey: "your-openai-key",     // 必填, 你的OpenAI API密钥
+		Organization: "your-organization", // 可选, 你的组织id
+		HttpDebug:  true,                  // 可选, 是否开启调试模式(使用默认log输出HTTP请求信息)
+		ProxyURL: "proxy-url",             // 可选, 代理地址, 例如 http://xxxxxx:port, 如果包含基本鉴权, 格式为http://username:password@xxxxxx:port
 	}
-	client, err := openai.NewClient(config)
+	client, err := openai.NewClient(&config)
 	if err != nil {
 		panic(err)
 	}
 
-	// 调用GPT3.5模型
-	req := v1.CreateChatCompletionRequest{
+	// 创建 ChatCompletion
+	req1 := v1.CreateChatCompletionRequest{
 		Model: "gpt-3.5-turbo",
 		Messages: []v1.Message{
 			{
@@ -42,25 +42,66 @@ func main() {
 			},
 		},
 	}
-	result, err := client.V1.Chat.CreateChatCompletion(&req)
-	if err != nil {
-		fmt.Printf("error: %v", err)
+	result1, err1 := client.V1.Chat.CreateChatCompletion(&req1)
+	if err1 != nil {
+		if e, ok := err1.(*v1.Error); ok {
+			fmt.Printf("open ai error: %v", e.Detail.Message)
+		}
+		fmt.Printf("error: %v", err1)
 		return
 	}
 
 	// 输出结果
-	fmt.Println(result)
+	fmt.Println(result1)
+
+	// 创建 Completion
+	req2 := v1.CreateCompletionRequest{
+		Model:       "text-davinci-003",
+		Prompt:      openaitype.StringOrArray{"Say this is a test", "Say Hello World"},
+		MaxTokens:   openaitype.PointInt(150),
+		Temperature: openaitype.PointFloat64(0),
+		TopP:        openaitype.PointFloat64(1),
+		N:           openaitype.PointInt(1),
+		Stream:      openaitype.PointBool(false),
+		Stop:        openaitype.StringOrArray{"\n"},
+	}
+
+	result2, err2 := client.V1.Completion.CreateCompletion(&req2)
+	if err2 != nil {
+		if e, ok := err2.(*v1.Error); ok {
+			fmt.Printf("open ai error: %v", e.Detail.Message)
+		}
+		fmt.Printf("error: %v", err2)
+		return
+	}
+
+	// 输出结果
+	fmt.Println(result2)
 }
 ```
+### 关于错误
+
+如果您使用 SDK 进行 HTTP 请求时出现错误，或者 OpenAI 返回了错误（请参阅 `openai.api.v1.Error`），这些错误都将作为
+`error` 参数返回。如果您需要操作 OpenAI 返回的错误详细信息，您可以使用 `result.Error` 进行操作，或者尝试通过类型断言 `err.(*v1.Error)` 进行操作。
 
 ### 其他类型定义
 
 除OpenAI Golang SDK本身外，还提供了一些类型定义以适应OpenAI中的可选字段。这些类型定义和实用函数可以在`openaitype`
 包中找到。这些类型定义和函数可以帮助您更方便地与OpenAI API交互，并确保API请求格式正确。
 
-### 许可证
+下面是 `openaitype` 包中的定义：
 
-OpenAI Golang SDK采用MIT许可证发布。更多信息请参见许可证文件。
+- `StringOrArray` 类型：一个字符串或字符串数组类型，实现了 `MarshalJSON` 和 `UnmarshalJSON` 两个方法，用于在 JSON 和 `StringOrArray` 之间进行序列化和反序列化。
+    
+- 转换函数：包括以下函数，用于将基本类型转换为对应的指针类型：
+    
+    - `PointInt(i int) *int`
+    - `PointInt32(i int32) *int32`
+    - `PointInt64(i int64) *int64`
+    - `PointBool(b bool) *bool`
+    - `PointFloat32(f float32) *float32`
+    - `PointFloat64(f float64) *float64`
+    - `PointString(s string) *string`
 
 ### 贡献
 Powered by [Artisan Cloud](https://github.com/ArtisanCloud)
