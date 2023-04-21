@@ -8,8 +8,6 @@ Related documentation: [OpenAI API Documentation](https://platform.openai.com/do
 
 You can easily install the OpenAI Golang SDK using Go Modules. In your project directory, run the following command:
 
-arduinoCopy code
-
 `go get -u github.com/artisancloud/openai` 
 
 ### Usage
